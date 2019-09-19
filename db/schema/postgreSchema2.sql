@@ -2,7 +2,6 @@ DROP DATABASE IF EXISTS qna;
 
 CREATE DATABASE qna;
 
--- USE qna;
 \c qna
 
 DROP TABLE IF EXISTS temp_questions;
@@ -40,3 +39,6 @@ CREATE TABLE temp_photos (
 \COPY temp_questions FROM '../../data/questions.csv' CSV HEADER;
 \COPY temp_answers FROM '../../data/answers.csv' CSV HEADER;
 \COPY temp_photos FROM '../../data/answers_photos.csv' CSV HEADER;
+
+CREATE INDEX question_index ON temp_answers(question_id);
+CREATE INDEX answer_index ON temp_photos(answer_id);

@@ -21,7 +21,7 @@ const getQuestions = (req, res) => {
       if (err) {
         console.log(err);
       }
-      console.log(results.rows[0].questions[1].answers[0].photos);
+      console.log(results.rows[0].questions[0].answers);
       res.end();
     }
   );
