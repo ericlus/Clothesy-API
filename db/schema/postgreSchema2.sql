@@ -40,5 +40,6 @@ CREATE TABLE temp_photos (
 \COPY temp_answers FROM '../../data/answers.csv' CSV HEADER;
 \COPY temp_photos FROM '../../data/answers_photos.csv' CSV HEADER;
 
+CREATE INDEX product_index ON temp_questions(product_id);
 CREATE INDEX question_index ON temp_answers(question_id);
 CREATE INDEX answer_index ON temp_photos(answer_id);

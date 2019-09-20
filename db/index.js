@@ -21,7 +21,8 @@ const getQuestions = (req, res) => {
       if (err) {
         console.log(err);
       }
-      console.log(results.rows[0].questions[0].answers);
+      console.log(results.rows[0].questions);
+      res.send(results.rows[0].questions);
       res.end();
     }
   );
