@@ -9,7 +9,7 @@ DROP TABLE IF EXISTS temp_answers;
 DROP TABLE IF EXISTS temp_photos;
 
 CREATE TABLE temp_questions (
-    question_id INT NOT NULL PRIMARY KEY,
+    question_id SERIAL PRIMARY KEY,
     product_id INT,
     question_body VARCHAR,
     question_date_written VARCHAR,
@@ -20,7 +20,7 @@ CREATE TABLE temp_questions (
 );
 
 CREATE TABLE temp_answers (
-    answer_id INT NOT NULL PRIMARY KEY,
+    answer_id SERIAL PRIMARY KEY,
     question_id INT,
     answer_body VARCHAR,
     answer_date_written VARCHAR,
@@ -31,15 +31,22 @@ CREATE TABLE temp_answers (
 );
 
 CREATE TABLE temp_photos (
-    photo_id INT NOT NULL PRIMARY KEY,
+    photo_id SERIAL PRIMARY KEY,
     answer_id INT,
     photo_url VARCHAR
 );
+
+ALTER TABLE temp_answers ADD FOREIGN KEY (question_id) REFERENCES temp_questions (question_id);
+ALTER TABLE temp_photos ADD FOREIGN KEY (answer_id) REFERENCES temp_answers (answer_id);
 
 \COPY temp_questions FROM '../../data/questions.csv' CSV HEADER;
 \COPY temp_answers FROM '../../data/answers.csv' CSV HEADER;
 \COPY temp_photos FROM '../../data/answers_photos.csv' CSV HEADER;
 
-CREATE INDEX product_index ON temp_questions(product_id);
-CREATE INDEX question_index ON temp_answers(question_id);
-CREATE INDEX answer_index ON temp_photos(answer_id);
+CREATE INDEX CONCURRENTLY product_index ON temp_questions(product_id);
+CREATE INDEX CONCURRENTLY question_index ON temp_answers(question_id);
+CREATE INDEX CONCURRENTLY answer_index ON temp_photos(answer_id);
+
+ALTER SEQUENCE temp_questions_question_id_seq RESTART WITH 3521635;
+ALTER SEQUENCE temp_answers_answer_id_seq RESTART WITH 12392947;
+ALTER SEQUENCE temp_photos_photo_id_seq RESTART WITH 3717893;
