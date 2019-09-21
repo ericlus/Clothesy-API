@@ -72,8 +72,9 @@ const postAnswer = (req, res) => {
     )
     .then(results => {
       let answerId = results.rows[0].answer_id;
+      let photoUrl = req.body.photo_url || [];
       return Promise.all(
-        req.body.photo_url.map(photo => {
+        photoUrl.map(photo => {
           return client.query(`INSERT INTO temp_photos ("answer_id", "photo_url")
         VALUES (${answerId}, '${photo}')`);
         })
