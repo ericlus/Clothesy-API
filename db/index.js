@@ -10,71 +10,81 @@ const client = new Client({
 client.connect();
 
 const getQuestions = (req, res) => {
-  client.query(
-    `SELECT json_agg(question_list) as questions
+  client
+    .query(
+      `SELECT json_agg(question_list) as questions
     FROM (SELECT *, (
       SELECT json_agg(answer_list) as answers FROM ( SELECT *, (
         SELECT json_agg(photo_list) as photos
         FROM (SELECT * FROM temp_photos WHERE answer_id = b.answer_id) photo_list
       ) FROM temp_answers as b WHERE question_id = a.question_id) answer_list
-    ) FROM temp_questions as a WHERE product_id = ${req.params.product_id}) question_list`,
-    (err, results) => {
-      if (err) {
-        console.log(err);
-      }
+    ) FROM temp_questions as a WHERE product_id = ${req.params.product_id}) question_list`
+    )
+    .then(results => {
       res.send(results.rows[0].questions);
-    }
-  );
+    })
+    .catch(err => {
+      console.log(err);
+    });
 };
 
 const getAnswers = (req, res) => {
-  client.query(
-    `SELECT json_agg(answer_list) as answers FROM ( SELECT *, (
+  client
+    .query(
+      `SELECT json_agg(answer_list) as answers FROM ( SELECT *, (
       SELECT json_agg(photo_list) as photos
       FROM (SELECT * FROM temp_photos WHERE answer_id = b.answer_id) photo_list
-    ) FROM temp_answers as b WHERE question_id = ${req.params.question_id}) answer_list
-  `,
-    (err, results) => {
-      if (err) {
-        console.log(err);
-      }
+    ) FROM temp_answers as b WHERE question_id = ${req.params.question_id}) answer_list`
+    )
+    .then(results => {
       res.send(results.rows[0].answers);
-    }
-  );
+    })
+    .catch(err => {
+      console.log(err);
+    });
 };
 
 const postQuestion = (req, res) => {
-  client.query(
-    `INSERT INTO temp_questions ("product_id", "question_body",
+  client
+    .query(
+      `INSERT INTO temp_questions ("product_id", "question_body",
      "question_date_written", "asker_name", "asker_email", "question_reported", "question_helpful")
      VALUES (${req.params.product_id}, '${req.body.question_body}', 
      '${moment().format("YYYY-MM-DD")}', '${req.body.asker_name}', 
-     '${req.body.asker_email}', 0, 0)`,
-    err => {
-      if (err) {
-        console.log(err);
-      } else {
-        res.end();
-      }
-    }
-  );
+     '${req.body.asker_email}', 0, 0)`
+    )
+    .then(() => {
+      res.end();
+    })
+    .catch(err => {
+      console.log(err);
+    });
 };
 
 const postAnswer = (req, res) => {
-  client.query(
-    `INSERT INTO temp_answers ("question_id", "answer_body", 
+  client
+    .query(
+      `INSERT INTO temp_answers ("question_id", "answer_body",
   "answer_date_written", "answer_name", "answerer_email", "answer_reported", "answer_helpful")
-  VALUES (${req.params.question_id}, '${req.body.answer_body}', 
-  '${moment().format("YYYY-MM-DD")}', '${req.body.answer_name}', 
-  '${req.body.answerer_email}', 0, 0)`,
-    err => {
-      if (err) {
-        console.log(err);
-      } else {
-        res.end();
-      }
-    }
-  );
+  VALUES (${req.params.question_id}, '${req.body.answer_body}',
+  '${moment().format("YYYY-MM-DD")}', '${req.body.answer_name}',
+  '${req.body.answerer_email}', 0, 0) RETURNING answer_id`
+    )
+    .then(results => {
+      let answerId = results.rows[0].answer_id;
+      return Promise.all(
+        req.body.photo_url.map(photo => {
+          return client.query(`INSERT INTO temp_photos ("answer_id", "photo_url")
+        VALUES (${answerId}, '${photo}')`);
+        })
+      );
+    })
+    .then(() => {
+      res.end();
+    })
+    .catch(err => {
+      console.log(err);
+    });
 };
 
 module.exports = { getQuestions, getAnswers, postQuestion, postAnswer };
