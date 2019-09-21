@@ -14,14 +14,22 @@ const getQuestions = (req, res) => {
     .query(
       `SELECT json_agg(question_list) as questions
     FROM (SELECT *, (
-      SELECT json_agg(answer_list) as answers FROM ( SELECT *, (
-        SELECT json_agg(photo_list) as photos
-        FROM (SELECT * FROM temp_photos WHERE answer_id = b.answer_id) photo_list
+      SELECT COALESCE (json_agg(answer_list), '[]') as answers FROM ( SELECT *, (
+        SELECT COALESCE (json_agg(photo_list), '[]') as photos FROM (
+          SELECT * FROM temp_photos WHERE answer_id = b.answer_id) photo_list
       ) FROM temp_answers as b WHERE question_id = a.question_id) answer_list
     ) FROM temp_questions as a WHERE product_id = ${req.params.product_id}) question_list`
     )
     .then(results => {
-      res.send(results.rows[0].questions);
+      let filteredQuestions = results.rows[0].questions.filter(question => {
+        return question.question_reported === 0;
+      });
+      filteredQuestions.forEach(question => {
+        question.answers = question.answers.filter(answer => {
+          return answer.answer_reported === 0;
+        });
+      });
+      res.send(filteredQuestions);
     })
     .catch(err => {
       console.log(err);
@@ -32,12 +40,15 @@ const getAnswers = (req, res) => {
   client
     .query(
       `SELECT json_agg(answer_list) as answers FROM ( SELECT *, (
-      SELECT json_agg(photo_list) as photos
+      SELECT COALESCE (json_agg(photo_list), '[]') as photos
       FROM (SELECT * FROM temp_photos WHERE answer_id = b.answer_id) photo_list
     ) FROM temp_answers as b WHERE question_id = ${req.params.question_id}) answer_list`
     )
     .then(results => {
-      res.send(results.rows[0].answers);
+      let filteredAnswers = results.rows[0].answers.filter(answer => {
+        return answer.answer_reported === 0;
+      });
+      res.send(filteredAnswers);
     })
     .catch(err => {
       console.log(err);
@@ -72,9 +83,8 @@ const postAnswer = (req, res) => {
     )
     .then(results => {
       let answerId = results.rows[0].answer_id;
-      let photoUrl = req.body.photo_url || [];
       return Promise.all(
-        photoUrl.map(photo => {
+        req.body.photo_url.map(photo => {
           return client.query(`INSERT INTO temp_photos ("answer_id", "photo_url")
         VALUES (${answerId}, '${photo}')`);
         })
