@@ -87,4 +87,69 @@ const postAnswer = (req, res) => {
     });
 };
 
-module.exports = { getQuestions, getAnswers, postQuestion, postAnswer };
+const markQuestionHelpful = (req, res) => {
+  client
+    .query(
+      `UPDATE temp_questions SET question_helpful = question_helpful + 1
+  WHERE question_id = ${req.params.question_id}`
+    )
+    .then(() => {
+      res.end();
+    })
+    .catch(err => {
+      console.log(err);
+    });
+};
+
+const reportQuestion = (req, res) => {
+  client
+    .query(
+      `UPDATE temp_questions SET question_reported = question_reported + 1
+WHERE question_id = ${req.params.question_id}`
+    )
+    .then(() => {
+      res.end();
+    })
+    .catch(err => {
+      console.log(err);
+    });
+};
+
+const markAnswerHelpful = (req, res) => {
+  client
+    .query(
+      `UPDATE temp_answers SET answer_helpful = answer_helpful + 1
+WHERE answer_id = ${req.params.answer_id}`
+    )
+    .then(() => {
+      res.end();
+    })
+    .catch(err => {
+      console.log(err);
+    });
+};
+
+const reportAnswer = (req, res) => {
+  client
+    .query(
+      `UPDATE temp_answers SET answer_reported = answer_reported + 1
+WHERE answer_id = ${req.params.answer_id}`
+    )
+    .then(() => {
+      res.end();
+    })
+    .catch(err => {
+      console.log(err);
+    });
+};
+
+module.exports = {
+  getQuestions,
+  getAnswers,
+  postQuestion,
+  postAnswer,
+  markQuestionHelpful,
+  reportQuestion,
+  markAnswerHelpful,
+  reportAnswer
+};
