@@ -1,18 +1,34 @@
 const { Client } = require("pg");
-const { user, host, database, password } = require("../config.js");
 var moment = require("moment");
 
-const connectionString = `postgres://${user}:${password}@${host}:5432/${database}`;
+const connectInfo = {
+  user: process.env.DB_USER || "ericluu",
+  host: process.env.DB_HOST || "localhost",
+  database: process.env.DB_DB || "qna",
+  password: ""
+};
 
+const connectionString = `postgres://${connectInfo.user}:${connectInfo.password}@${connectInfo.host}:5432/${connectInfo.database}`;
 const client = new Client({
   connectionString: connectionString
 });
-client.connect();
+
+const connectDB = () =>
+  client.connect(err => {
+    if (err) {
+      console.log(err);
+      client.release();
+      setTimeout(connectDB, 5000);
+    }
+    console.log("connected to db");
+  });
+
+connectDB();
 
 const getQuestions = (req, res) => {
   client
     .query(
-      `SELECT json_agg(question_list) as questions
+      `SELECT json_agg(question_list) as results
     FROM (SELECT *, (
       SELECT COALESCE (json_agg(answer_list), '[]') as answers FROM ( SELECT *, (
         SELECT COALESCE (json_agg(photo_list), '[]') as photos FROM (
@@ -21,7 +37,7 @@ const getQuestions = (req, res) => {
     ) FROM temp_questions as a WHERE product_id = ${req.params.product_id}) question_list`
     )
     .then(results => {
-      let filteredQuestions = results.rows[0].questions.filter(question => {
+      let filteredQuestions = results.rows[0].results.filter(question => {
         return question.question_reported === 0;
       });
       filteredQuestions.forEach(question => {
@@ -29,7 +45,10 @@ const getQuestions = (req, res) => {
           return answer.answer_reported === 0;
         });
       });
-      res.send(filteredQuestions);
+      res.send({
+        product_id: req.params.product_id,
+        results: filteredQuestions
+      });
     })
     .catch(err => {
       console.log(err);
@@ -48,7 +67,7 @@ const getAnswers = (req, res) => {
       let filteredAnswers = results.rows[0].answers.filter(answer => {
         return answer.answer_reported === 0;
       });
-      res.send(filteredAnswers);
+      res.send({ question: req.params.question_id, results: filteredAnswers });
     })
     .catch(err => {
       console.log(err);
