@@ -39,9 +39,9 @@ CREATE TABLE temp_photos (
 ALTER TABLE temp_answers ADD FOREIGN KEY (question_id) REFERENCES temp_questions (question_id);
 ALTER TABLE temp_photos ADD FOREIGN KEY (answer_id) REFERENCES temp_answers (answer_id);
 
-\COPY temp_questions FROM '../../data/questions.csv' CSV HEADER;
-\COPY temp_answers FROM '../../data/answers.csv' CSV HEADER;
-\COPY temp_photos FROM '../../data/answers_photos.csv' CSV HEADER;
+\COPY temp_questions FROM '../../qnaData/questions.csv' CSV HEADER;
+\COPY temp_answers FROM '../../qnaData/answers.csv' CSV HEADER;
+\COPY temp_photos FROM '../../qnaData/answers_photos.csv' CSV HEADER;
 
 CREATE INDEX CONCURRENTLY product_index ON temp_questions(product_id);
 CREATE INDEX CONCURRENTLY question_index ON temp_answers(question_id);

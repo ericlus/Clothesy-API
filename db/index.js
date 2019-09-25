@@ -1,4 +1,4 @@
-const { Client } = require("pg");
+const { Pool } = require("pg");
 var moment = require("moment");
 
 const connectInfo = {
@@ -9,24 +9,26 @@ const connectInfo = {
 };
 
 const connectionString = `postgres://${connectInfo.user}:${connectInfo.password}@${connectInfo.host}:5432/${connectInfo.database}`;
-const client = new Client({
-  connectionString: connectionString
-});
+let pool;
+const connectDB = () => {
+  pool = new Pool({
+    connectionString: connectionString
+  });
 
-const connectDB = () =>
-  client.connect(err => {
+  pool.connect(err => {
     if (err) {
       console.log(err);
-      client.release();
+      pool.end();
       setTimeout(connectDB, 5000);
     }
     console.log("connected to db");
   });
+};
 
 connectDB();
 
 const getQuestions = (req, res) => {
-  client
+  pool
     .query(
       `SELECT json_agg(question_list) as results
     FROM (SELECT *, (
@@ -56,7 +58,7 @@ const getQuestions = (req, res) => {
 };
 
 const getAnswers = (req, res) => {
-  client
+  pool
     .query(
       `SELECT json_agg(answer_list) as answers FROM ( SELECT *, (
       SELECT COALESCE (json_agg(photo_list), '[]') as photos
@@ -75,7 +77,7 @@ const getAnswers = (req, res) => {
 };
 
 const postQuestion = (req, res) => {
-  client
+  pool
     .query(
       `INSERT INTO temp_questions ("product_id", "question_body",
      "question_date_written", "asker_name", "asker_email", "question_reported", "question_helpful")
@@ -92,7 +94,7 @@ const postQuestion = (req, res) => {
 };
 
 const postAnswer = (req, res) => {
-  client
+  pool
     .query(
       `INSERT INTO temp_answers ("question_id", "answer_body",
   "answer_date_written", "answer_name", "answerer_email", "answer_reported", "answer_helpful")
@@ -104,7 +106,7 @@ const postAnswer = (req, res) => {
       let answerId = results.rows[0].answer_id;
       return Promise.all(
         req.body.photo_url.map(photo => {
-          return client.query(`INSERT INTO temp_photos ("answer_id", "photo_url")
+          return pool.query(`INSERT INTO temp_photos ("answer_id", "photo_url")
         VALUES (${answerId}, '${photo}')`);
         })
       );
@@ -118,7 +120,7 @@ const postAnswer = (req, res) => {
 };
 
 const markQuestionHelpful = (req, res) => {
-  client
+  pool
     .query(
       `UPDATE temp_questions SET question_helpful = question_helpful + 1
   WHERE question_id = ${req.params.question_id}`
@@ -132,7 +134,7 @@ const markQuestionHelpful = (req, res) => {
 };
 
 const reportQuestion = (req, res) => {
-  client
+  pool
     .query(
       `UPDATE temp_questions SET question_reported = question_reported + 1
 WHERE question_id = ${req.params.question_id}`
@@ -146,7 +148,7 @@ WHERE question_id = ${req.params.question_id}`
 };
 
 const markAnswerHelpful = (req, res) => {
-  client
+  pool
     .query(
       `UPDATE temp_answers SET answer_helpful = answer_helpful + 1
 WHERE answer_id = ${req.params.answer_id}`
@@ -160,7 +162,7 @@ WHERE answer_id = ${req.params.answer_id}`
 };
 
 const reportAnswer = (req, res) => {
-  client
+  pool
     .query(
       `UPDATE temp_answers SET answer_reported = answer_reported + 1
 WHERE answer_id = ${req.params.answer_id}`

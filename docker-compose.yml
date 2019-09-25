@@ -1,0 +1,26 @@
+version: "3.7"
+services:
+  db:
+    container_name: qna_postgres
+    image: postgres
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ericluu
+      POSTGRES_DB: qna
+  app:
+    container_name: qna_server
+    restart: always
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DB_USER: ericluu
+      DB_DB: qna
+      DB_HOST: qna_postgres
+    depends_on:
+      - db
+volumes:
+  pgdata:
