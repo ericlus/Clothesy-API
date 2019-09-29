@@ -1,11 +1,12 @@
 const { Pool } = require("pg");
-var moment = require("moment");
+const moment = require("moment");
+const configInfo = require("../config.js");
 
 const connectInfo = {
-  user: process.env.DB_USER || "ericluu",
-  host: process.env.DB_HOST || "localhost",
-  database: process.env.DB_DB || "qna",
-  password: ""
+  user: process.env.DB_USER || configInfo.user,
+  host: process.env.DB_HOST || configInfo.host,
+  database: process.env.DB_DB || configInfo.database,
+  password: process.env.DB_PASSWORD || configInfo.password
 };
 
 const connectionString = `postgres://${connectInfo.user}:${connectInfo.password}@${connectInfo.host}:5432/${connectInfo.database}`;
@@ -34,13 +35,13 @@ const getQuestions = (req, res) => {
     FROM (SELECT *, (
       SELECT COALESCE (json_agg(answer_list), '[]') as answers FROM ( SELECT *, (
         SELECT COALESCE (json_agg(photo_list), '[]') as photos FROM (
-          SELECT * FROM temp_photos WHERE answer_id = b.answer_id) photo_list
+          SELECT "url" FROM temp_photos WHERE answer_id = b.answer_id) photo_list
       ) FROM temp_answers as b WHERE question_id = a.question_id) answer_list
     ) FROM temp_questions as a WHERE product_id = ${req.params.product_id}) question_list`
     )
     .then(results => {
       let filteredQuestions = results.rows[0].results.filter(question => {
-        return question.question_reported === 0;
+        return question.reported === 0;
       });
       filteredQuestions.forEach(question => {
         question.answers = question.answers.filter(answer => {
@@ -60,7 +61,7 @@ const getQuestions = (req, res) => {
 const getAnswers = (req, res) => {
   pool
     .query(
-      `SELECT json_agg(answer_list) as answers FROM ( SELECT *, (
+      `SELECT COALESCE (json_agg(answer_list), '[]') as answers FROM ( SELECT *, (
       SELECT COALESCE (json_agg(photo_list), '[]') as photos
       FROM (SELECT * FROM temp_photos WHERE answer_id = b.answer_id) photo_list
     ) FROM temp_answers as b WHERE question_id = ${req.params.question_id}) answer_list`
@@ -80,7 +81,7 @@ const postQuestion = (req, res) => {
   pool
     .query(
       `INSERT INTO temp_questions ("product_id", "question_body",
-     "question_date_written", "asker_name", "asker_email", "question_reported", "question_helpful")
+     "question_date", "asker_name", "asker_email", "reported", "question_helpfulness")
      VALUES (${req.params.product_id}, '${req.body.question_body}', 
      '${moment().format("YYYY-MM-DD")}', '${req.body.asker_name}', 
      '${req.body.asker_email}', 0, 0)`
@@ -96,17 +97,17 @@ const postQuestion = (req, res) => {
 const postAnswer = (req, res) => {
   pool
     .query(
-      `INSERT INTO temp_answers ("question_id", "answer_body",
-  "answer_date_written", "answer_name", "answerer_email", "answer_reported", "answer_helpful")
-  VALUES (${req.params.question_id}, '${req.body.answer_body}',
-  '${moment().format("YYYY-MM-DD")}', '${req.body.answer_name}',
+      `INSERT INTO temp_answers ("question_id", "body",
+  "date", "answerer_name", "answerer_email", "answer_reported", "helpfulness")
+  VALUES (${req.params.question_id}, '${req.body.body}',
+  '${moment().format("YYYY-MM-DD")}', '${req.body.answerer_name}',
   '${req.body.answerer_email}', 0, 0) RETURNING answer_id`
     )
     .then(results => {
       let answerId = results.rows[0].answer_id;
       return Promise.all(
-        req.body.photo_url.map(photo => {
-          return pool.query(`INSERT INTO temp_photos ("answer_id", "photo_url")
+        req.body.url.map(photo => {
+          return pool.query(`INSERT INTO temp_photos ("answer_id", "url")
         VALUES (${answerId}, '${photo}')`);
         })
       );
@@ -122,7 +123,7 @@ const postAnswer = (req, res) => {
 const markQuestionHelpful = (req, res) => {
   pool
     .query(
-      `UPDATE temp_questions SET question_helpful = question_helpful + 1
+      `UPDATE temp_questions SET question_helpfulness = question_helpfulness + 1
   WHERE question_id = ${req.params.question_id}`
     )
     .then(() => {
@@ -136,7 +137,7 @@ const markQuestionHelpful = (req, res) => {
 const reportQuestion = (req, res) => {
   pool
     .query(
-      `UPDATE temp_questions SET question_reported = question_reported + 1
+      `UPDATE temp_questions SET reported = reported + 1
 WHERE question_id = ${req.params.question_id}`
     )
     .then(() => {
@@ -150,7 +151,7 @@ WHERE question_id = ${req.params.question_id}`
 const markAnswerHelpful = (req, res) => {
   pool
     .query(
-      `UPDATE temp_answers SET answer_helpful = answer_helpful + 1
+      `UPDATE temp_answers SET helpfulness = helpfulness + 1
 WHERE answer_id = ${req.params.answer_id}`
     )
     .then(() => {
