@@ -1,16 +1,15 @@
 {
-  "name": "sdc",
+  "name": "clothesy-api",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "server-dev": "nodemon ./server/index.js",
-    "start": "node ./server/index.js"
+    "start": "nodemon ./server/index.js"
   },
-  "author": "",
+  "author": "Eric Luu",
   "license": "ISC",
   "keywords": [],
-  "description": "",
+  "description": "Redesigned API for Clothesy",
   "dependencies": {
     "body-parser": "^1.19.0",
     "express": "^4.17.1",

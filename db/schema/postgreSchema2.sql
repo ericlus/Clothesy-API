@@ -12,28 +12,28 @@ CREATE TABLE temp_questions (
     question_id SERIAL PRIMARY KEY,
     product_id INT,
     question_body VARCHAR,
-    question_date_written VARCHAR,
+    question_date VARCHAR,
     asker_name VARCHAR,
     asker_email VARCHAR,
-    question_reported INT,
-    question_helpful INT
+    reported INT,
+    question_helpfulness INT
 );
 
 CREATE TABLE temp_answers (
     answer_id SERIAL PRIMARY KEY,
     question_id INT,
-    answer_body VARCHAR,
-    answer_date_written VARCHAR,
-    answer_name VARCHAR,
+    body VARCHAR,
+    date VARCHAR,
+    answerer_name VARCHAR,
     answerer_email VARCHAR,
     answer_reported INT,
-    answer_helpful INT
+    helpfulness INT
 );
 
 CREATE TABLE temp_photos (
     photo_id SERIAL PRIMARY KEY,
     answer_id INT,
-    photo_url VARCHAR
+    url VARCHAR
 );
 
 ALTER TABLE temp_answers ADD FOREIGN KEY (question_id) REFERENCES temp_questions (question_id);

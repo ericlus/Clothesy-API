@@ -32,25 +32,17 @@ const getQuestions = (req, res) => {
   pool
     .query(
       `SELECT json_agg(question_list) as results
-    FROM (SELECT *, (
-      SELECT COALESCE (json_agg(answer_list), '[]') as answers FROM ( SELECT *, (
-        SELECT COALESCE (json_agg(photo_list), '[]') as photos FROM (
-          SELECT "url" FROM temp_photos WHERE answer_id = b.answer_id) photo_list
-      ) FROM temp_answers as b WHERE question_id = a.question_id) answer_list
-    ) FROM temp_questions as a WHERE product_id = ${req.params.product_id}) question_list`
+      FROM (SELECT *, (
+        SELECT COALESCE (json_agg(answer_list), '[]') as answers FROM ( SELECT *, (
+          SELECT COALESCE (json_agg(photo_list), '[]') as photos FROM (
+            SELECT "url" FROM temp_photos WHERE answer_id = b.answer_id) photo_list
+        ) FROM temp_answers as b WHERE question_id = a.question_id) answer_list
+      ) FROM temp_questions as a WHERE product_id = ${req.params.product_id}) question_list`
     )
     .then(results => {
-      let filteredQuestions = results.rows[0].results.filter(question => {
-        return question.reported === 0;
-      });
-      filteredQuestions.forEach(question => {
-        question.answers = question.answers.filter(answer => {
-          return answer.answer_reported === 0;
-        });
-      });
       res.send({
         product_id: req.params.product_id,
-        results: filteredQuestions
+        results: results.rows[0]
       });
     })
     .catch(err => {
@@ -67,10 +59,7 @@ const getAnswers = (req, res) => {
     ) FROM temp_answers as b WHERE question_id = ${req.params.question_id}) answer_list`
     )
     .then(results => {
-      let filteredAnswers = results.rows[0].answers.filter(answer => {
-        return answer.answer_reported === 0;
-      });
-      res.send({ question: req.params.question_id, results: filteredAnswers });
+      res.send({ question: req.params.question_id, results: results.rows[0] });
     })
     .catch(err => {
       console.log(err);

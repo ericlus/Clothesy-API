@@ -30,5 +30,5 @@ app.put("/qa/answer/:answer_id/helpful", markAnswerHelpful);
 app.put("/qa/answer/:answer_id/report", reportAnswer);
 
 app.listen(port, () => {
-  console.log("connected to server");
+  console.log(`listening on port: ${port}`);
 });
