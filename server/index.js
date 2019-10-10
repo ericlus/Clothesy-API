@@ -11,7 +11,7 @@ const {
   reportQuestion,
   markAnswerHelpful,
   reportAnswer
-} = require("../db/index.js");
+} = require("./controllers/questionController.js");
 
 const port = process.env.PORT || 3000;
 
