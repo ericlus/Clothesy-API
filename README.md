@@ -1,6 +1,6 @@
 # Clothesy-API
 
-Redesigned question and answers API for Clothesy 
+Redesigned question and answers API for Clothesy (Shopping Application)
 
 **List Questions**
 
